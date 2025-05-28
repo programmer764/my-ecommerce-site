@@ -1,0 +1,29 @@
+services:
+  nextjs-app:
+    build: .
+    container_name: nextjs-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo-container
+    environment:
+      - MONGODB_URI=mongodb://mongo-container:27017/dbcom
+    networks:
+      - my-network
+      
+  mongo-container:
+    image: mongo:4.4
+    container_name: mongo-container
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongodb_dump:/data/db/dump  # Добавляем дамп в контейнер
+    restart: always
+    networks:
+      - my-network
+    command: >
+      bash -c "mongod --bind_ip_all & sleep 5 && mongorestore /data/db/dump && tail -f /dev/null"  # Авто-восстановление
+
+networks:
+  my-network:
+    driver: bridge
