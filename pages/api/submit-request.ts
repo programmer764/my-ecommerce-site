@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!phone) return res.status(400).json({ message: 'Phone is required' })
 
     const client = await clientPromise
-    const db = client.db('dbcom') // замени на имя своей базы
+    const db = client.db('dbcom2') // замени на имя своей базы
     const collection = db.collection('requests')
 
     const result = await collection.insertOne({
