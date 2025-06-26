@@ -1,9 +1,15 @@
 // pages/api/products/index.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongo'
+<<<<<<< HEAD
 import { getRedis } from '@/lib/redis'
 import { z } from 'zod'
 
+=======
+import { z } from 'zod'
+
+// Схема валидации query-параметров
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
 const querySchema = z.object({
   search: z.string().max(100).optional(),
   categorySlug: z.string().max(100).optional(),
@@ -32,6 +38,7 @@ export default async function handler(
     return res.status(405).json({ message: 'Method Not Allowed' })
   }
 
+<<<<<<< HEAD
   const parsed = querySchema.safeParse(req.query)
   if (!parsed.success) {
     return res.status(400).json({
@@ -51,6 +58,12 @@ export default async function handler(
     }
   } catch (err) {
     console.error('Redis GET error:', err)
+=======
+  // ✅ Validate query
+  const parsed = querySchema.safeParse(req.query)
+  if (!parsed.success) {
+    return res.status(400).json({ message: 'Некорректные параметры', errors: parsed.error.errors })
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
   }
 
   const {
@@ -60,6 +73,7 @@ export default async function handler(
     country,
     compressor,
     remoteControl,
+<<<<<<< HEAD
     minPrice,
     maxPrice,
     minArea,
@@ -70,6 +84,13 @@ export default async function handler(
     maxCool,
     minNoise,
     maxNoise,
+=======
+    minPrice, maxPrice,
+    minArea,   maxArea,
+    minHeat,   maxHeat,
+    minCool,   maxCool,
+    minNoise,  maxNoise,
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
     page,
   } = parsed.data
 
@@ -81,21 +102,47 @@ export default async function handler(
 
   const andConditions: any[] = []
 
+<<<<<<< HEAD
   if (categorySlug && categorySlug !== 'Все') andConditions.push({ categorySlug })
   if (search) andConditions.push({ name: { $regex: search.trim(), $options: 'i' } })
   if (brand && brand !== 'Все') {
     andConditions.push({
       characteristics: { $elemMatch: { name: 'Производитель', value: brand } },
+=======
+  if (categorySlug && categorySlug !== 'Все') {
+    andConditions.push({ categorySlug })
+  }
+  if (search) {
+    andConditions.push({ name: { $regex: search.trim(), $options: 'i' } })
+  }
+  if (brand && brand !== 'Все') {
+    andConditions.push({
+      characteristics: {
+        $elemMatch: { name: 'Производитель', value: brand }
+      }
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
     })
   }
   if (country && country !== 'Все') {
     andConditions.push({
+<<<<<<< HEAD
       characteristics: { $elemMatch: { name: 'Страна бренда', value: country } },
+=======
+      characteristics: {
+        $elemMatch: { name: 'Страна бренда', value: country }
+      }
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
     })
   }
   if (compressor && compressor !== 'Все') {
     andConditions.push({
+<<<<<<< HEAD
       characteristics: { $elemMatch: { name: 'Компрессор', value: compressor } },
+=======
+      characteristics: {
+        $elemMatch: { name: 'Компрессор', value: compressor }
+      }
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
     })
   }
   if (remoteControl === 'true') {
@@ -103,9 +150,15 @@ export default async function handler(
       characteristics: {
         $elemMatch: {
           name: 'Пульт дистанционного управления',
+<<<<<<< HEAD
           value: 'Есть',
         },
       },
+=======
+          value: 'Есть'
+        }
+      }
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
     })
   }
   if (minPrice || maxPrice) {
@@ -135,6 +188,7 @@ export default async function handler(
                         $filter: {
                           input: '$characteristics',
                           as: 'c',
+<<<<<<< HEAD
                           cond: { $eq: ['$$c.name', charName] },
                         },
                       },
@@ -146,12 +200,26 @@ export default async function handler(
                 regex: '[0-9]+(?:[\\.,][0-9]+)?',
               },
             },
+=======
+                          cond: { $eq: ['$$c.name', charName] }
+                        }
+                      },
+                      as: 'x',
+                      in: '$$x.value'
+                    }
+                  }
+                },
+                regex: '[0-9]+(?:[\\.,][0-9]+)?'
+              }
+            }
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
           },
           in: {
             $toDouble: {
               $replaceAll: {
                 input: '$$rf.match',
                 find: ',',
+<<<<<<< HEAD
                 replacement: '.',
               },
             },
@@ -159,6 +227,15 @@ export default async function handler(
         },
       },
     },
+=======
+                replacement: '.'
+              }
+            }
+          }
+        }
+      }
+    }
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
   })
 
   pipeline.push(makeNumericField('Площадь помещения, кв.м.', 'areaNum'))
@@ -167,6 +244,7 @@ export default async function handler(
   pipeline.push(makeNumericField('Уровень шума внут. блока, дБ', 'noiseNum'))
 
   const numMatch: any = {}
+<<<<<<< HEAD
   if (minArea || maxArea)
     numMatch.areaNum = {
       ...(minArea ? { $gte: minArea } : {}),
@@ -187,6 +265,24 @@ export default async function handler(
       ...(minNoise ? { $gte: minNoise } : {}),
       ...(maxNoise ? { $lte: maxNoise } : {}),
     }
+=======
+  if (minArea || maxArea) numMatch.areaNum = {
+    ...(minArea ? { $gte: minArea } : {}),
+    ...(maxArea ? { $lte: maxArea } : {})
+  }
+  if (minHeat || maxHeat) numMatch.heatNum = {
+    ...(minHeat ? { $gte: minHeat } : {}),
+    ...(maxHeat ? { $lte: maxHeat } : {})
+  }
+  if (minCool || maxCool) numMatch.coolNum = {
+    ...(minCool ? { $gte: minCool } : {}),
+    ...(maxCool ? { $lte: maxCool } : {})
+  }
+  if (minNoise || maxNoise) numMatch.noiseNum = {
+    ...(minNoise ? { $gte: minNoise } : {}),
+    ...(maxNoise ? { $lte: maxNoise } : {})
+  }
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
 
   if (Object.keys(numMatch).length > 0) {
     pipeline.push({ $match: numMatch })
@@ -195,6 +291,7 @@ export default async function handler(
   pipeline.push({
     $facet: {
       data: [{ $skip: skip }, { $limit: limit }],
+<<<<<<< HEAD
       count: [{ $count: 'total' }],
     },
   })
@@ -214,3 +311,16 @@ export default async function handler(
 
   return res.status(200).json(result)
 }
+=======
+      count: [{ $count: 'total' }]
+    }
+  })
+
+  const [agg] = await coll.aggregate(pipeline).toArray()
+  const products = agg.data
+  const totalCount = agg.count[0]?.total || 0
+
+  return res.status(200).json({ products, totalCount })
+}
+  
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8

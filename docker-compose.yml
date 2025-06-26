@@ -1,11 +1,15 @@
+<<<<<<< HEAD
 version: '3.8'
 
+=======
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
 services:
   nextjs-app:
     build: .
     container_name: nextjs-app
     ports:
       - "3000:3000"
+<<<<<<< HEAD
     environment:
       - MONGODB_URI=mongodb://mongo-container:27017/dbcom
       - NEXT_PUBLIC_PROMETHEUS_ENABLED=true
@@ -21,12 +25,22 @@ services:
       timeout: 10s
       retries: 3
 
+=======
+    depends_on:
+      - mongo-container
+    environment:
+      - MONGODB_URI=mongodb://mongo-container:27017/dbcom
+    networks:
+      - my-network
+      
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
   mongo-container:
     image: mongo:4.4
     container_name: mongo-container
     ports:
       - "27017:27017"
     volumes:
+<<<<<<< HEAD
       - ./mongodb_dump:/data/db/dump
     networks:
       - my-network
@@ -104,3 +118,15 @@ networks:
 volumes:
   grafana-storage:
   redis-data:
+=======
+      - ./mongodb_dump:/data/db/dump  # Добавляем дамп в контейнер
+    restart: always
+    networks:
+      - my-network
+    command: >
+      bash -c "mongod --bind_ip_all & sleep 5 && mongorestore /data/db/dump && tail -f /dev/null"  # Авто-восстановление
+
+networks:
+  my-network:
+    driver: bridge
+>>>>>>> cc41e0a0c9e2b090d86a2fa6331f305cd0e97bf8
