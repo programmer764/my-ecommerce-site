@@ -1,0 +1,19 @@
+# Игнорируем папки, повторы
+node_modules
+.next
+.vscode
+.DS_Store
+npm-debug.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# НЕ игнорировать эти папки и файлы:
+!components
+!utils
+!styles
+!pages
+!lib
+!next.config.js
+!tsconfig.json

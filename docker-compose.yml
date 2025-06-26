@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  nextjs-app:
+    build: .
+    container_name: nextjs-app
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongo-container:27017/dbcom
+      - NEXT_PUBLIC_PROMETHEUS_ENABLED=true
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - my-network
+    depends_on:
+      - mongo-container
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongo-container:
+    image: mongo:4.4
+    container_name: mongo-container
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongodb_dump:/data/db/dump
+    networks:
+      - my-network
+    command: >
+      bash -c "mongod --bind_ip_all & sleep 5 && mongorestore /data/db/dump && tail -f /dev/null"
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40.0
+    container_name: mongodb-exporter
+    environment:
+      - MONGODB_URI=mongodb://mongo-container:27017
+    command:
+      - '--compatible-mode'
+      - '--collect-all'
+    ports:
+      - "9216:9216"
+    networks:
+      - my-network
+    depends_on:
+      - mongo-container
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+    networks:
+      - my-network
+    depends_on:
+      - nextjs-app
+      - mongodb-exporter
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - my-network
+    depends_on:
+      - prometheus
+
+networks:
+  my-network:
+    driver: bridge
+
+volumes:
+  grafana-storage:
+  redis-data:
