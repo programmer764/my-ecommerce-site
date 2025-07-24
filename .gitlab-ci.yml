@@ -1,0 +1,51 @@
+stages:
+  - deploy
+
+deploy_to_vps:
+  stage: deploy
+  image: ubuntu:20.04
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - apt-get update && apt-get install -y openssh-client git
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+  script:
+    - |
+      ssh -i ~/.ssh/id_ed25519 "$VPS_USER@$VPS_HOST" '
+        set -e
+
+        echo "📁 Создаём директорию ~/app, если нет.."
+        mkdir -p ~/app
+
+        if [ ! -d ~/app/.git ]; then
+          echo "🌀 Клонируем репозиторий.."
+          git clone git@gitlab.com:uralcemreklama-group/my-ecommerce-site2.git ~/app
+        else
+          echo "🔄 Обновляем репозиторий..."
+          cd ~/app
+          git fetch origin
+          git reset --hard origin/master
+        fi
+
+        cd ~/app
+
+        echo "🛑 Останавливаем и удаляем старые контейнеры..."
+        docker-compose down --remove-orphans || true
+
+        echo "🧹 Удаляем конфликтующие контейнеры по именам.."
+        docker rm -f nextjs-app mongodb-exporter redis mongo-container || true
+
+        echo "⬇️ Пуллим свежие образы..."
+        docker-compose pull || true
+
+        echo "🔨 Собираем проект..."
+        docker-compose build --pull
+
+        echo "🚀 Запускаем контейнеры..."
+        docker-compose up -d
+      '
+  only:
+    - master
